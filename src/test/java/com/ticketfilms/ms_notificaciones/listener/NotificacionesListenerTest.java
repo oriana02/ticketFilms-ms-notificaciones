@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -13,6 +14,7 @@ import com.ticketfilms.ms_notificaciones.dto.BoletoCompradoEvent;
 import com.ticketfilms.ms_notificaciones.dto.CompraFallidaEvent;
 import com.ticketfilms.ms_notificaciones.dto.ReservaExpiradaEvent;
 import com.ticketfilms.ms_notificaciones.exception.MensajeInvalidoException;
+import com.ticketfilms.ms_notificaciones.service.EmailService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,6 +30,9 @@ class NotificacionesListenerTest {
     @Mock
     private ObjectMapper objectMapper;
 
+    @Mock
+    private EmailService emailService;
+
     @InjectMocks
     private NotificacionesListener listener;
 
@@ -35,7 +40,7 @@ class NotificacionesListenerTest {
     // boleto.comprado
     // ============================================================
     @Test
-    void consumirBoletoComprado_mensajeValido_procesaSinError() throws Exception {
+    void consumirBoletoComprado_mensajeValido_enviaCorreo() throws Exception {
         BoletoCompradoEvent evento = new BoletoCompradoEvent(
                 "TF-AB12-CD34",
                 "a@b.cl",
@@ -48,7 +53,7 @@ class NotificacionesListenerTest {
                 .thenReturn(evento);
 
         assertDoesNotThrow(() -> listener.consumirBoletoComprado("{\"cualquier\":\"json\"}"));
-        verify(objectMapper).readValue(anyString(), eq(BoletoCompradoEvent.class));
+        verify(emailService).enviarConfirmacion(evento);
     }
 
     @Test
@@ -58,6 +63,25 @@ class NotificacionesListenerTest {
 
         assertThrows(MensajeInvalidoException.class,
                 () -> listener.consumirBoletoComprado("esto-no-es-json"));
+        verifyNoInteractions(emailService);
+    }
+
+    @Test
+    void consumirBoletoComprado_sinEmail_lanzaMensajeInvalidoException() throws Exception {
+        BoletoCompradoEvent incompleto = new BoletoCompradoEvent(
+                "TF-AB12-CD34",
+                null,
+                "Dune 3",
+                LocalDateTime.of(2026, 10, 18, 20, 0),
+                new BigDecimal("11000"),
+                List.of("F7"));
+
+        when(objectMapper.readValue(anyString(), eq(BoletoCompradoEvent.class)))
+                .thenReturn(incompleto);
+
+        assertThrows(MensajeInvalidoException.class,
+                () -> listener.consumirBoletoComprado("{\"sin\":\"email\"}"));
+        verifyNoInteractions(emailService);
     }
 
     // ============================================================
