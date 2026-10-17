@@ -1,6 +1,7 @@
 package com.ticketfilms.ms_notificaciones.service;
 
 import com.ticketfilms.ms_notificaciones.dto.BoletoCompradoEvent;
+import com.ticketfilms.ms_notificaciones.dto.CompraFallidaEvent;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.text.NumberFormat;
@@ -15,14 +16,14 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
 
-// Arma y envía el correo. Si falla, la excepción sube al listener y entra
+// Arma y envía los correos. Si falla, la excepción sube al listener y entra
 // el flujo de reintentos y DLT configurado en KafkaErrorHandlingConfig.
 @Service
 @RequiredArgsConstructor
 public class EmailService {
 
-    private static final DateTimeFormatter FORMATO_FECHA =
-            DateTimeFormatter.ofPattern("dd-MM-yyyy 'a las' HH:mm");
+    private static final DateTimeFormatter FORMATO_FECHA
+            = DateTimeFormatter.ofPattern("dd-MM-yyyy 'a las' HH:mm");
 
     private final JavaMailSender mailSender;
     private final QrService qrService;
@@ -56,6 +57,26 @@ public class EmailService {
         enviar(e.emailUsuario(), "Tu boleto " + e.codigoBoleto() + " - TicketFilms", html, qr);
     }
 
+    public void enviarCompraFallida(CompraFallidaEvent e) {
+        String motivo = (e.motivo() == null || e.motivo().isBlank())
+                ? "No se pudo completar el pago"
+                : e.motivo();
+
+        String referencia = (e.codigoBoleto() == null || e.codigoBoleto().isBlank())
+                ? ""
+                : "<p style=\"color:#666;font-size:12px\">Referencia: %s</p>"
+                        .formatted(HtmlUtils.htmlEscape(e.codigoBoleto()));
+
+        String html = """
+                <h2>No pudimos completar tu compra</h2>
+                <p>Motivo: %s</p>
+                <p>Los asientos que reservaste fueron liberados. Puedes volver a intentarlo desde TicketFilms.</p>
+                %s
+                """.formatted(HtmlUtils.htmlEscape(motivo), referencia);
+
+        enviar(e.emailUsuario(), "No pudimos completar tu compra - TicketFilms", html, null);
+    }
+
     private void enviar(String para, String asunto, String html, byte[] qr) {
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
@@ -63,8 +84,10 @@ public class EmailService {
             helper.setFrom(remitente);
             helper.setTo(para);
             helper.setSubject(asunto);
-            helper.setText(html, true);                                      // primero el texto
-            helper.addInline("qr", new ByteArrayResource(qr), "image/png");  // luego la imagen
+            helper.setText(html, true);                                          // primero el texto
+            if (qr != null) {
+                helper.addInline("qr", new ByteArrayResource(qr), "image/png");  // luego la imagen
+            }
             mailSender.send(mensaje);
         } catch (MessagingException ex) {
             throw new MailPreparationException("No se pudo armar el correo", ex);

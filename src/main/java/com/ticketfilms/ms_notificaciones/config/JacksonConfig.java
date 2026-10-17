@@ -1,5 +1,6 @@
 package com.ticketfilms.ms_notificaciones.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -19,6 +20,9 @@ public class JacksonConfig {
         mapper.registerModule(new JavaTimeModule());
         // Serializar fechas como ISO-8601 en lugar de timestamps numéricos
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        // Varios servicios leen el mismo tópico (ej. compra.fallida) y cada uno
+        // usa solo los campos que le sirven: los demás se ignoran, no son error.
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return mapper;
     }
 }

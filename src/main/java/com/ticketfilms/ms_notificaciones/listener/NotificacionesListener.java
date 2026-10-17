@@ -40,10 +40,11 @@ public class NotificacionesListener {
     @KafkaListener(topics = KafkaTopics.COMPRA_FALLIDA, groupId = "ms-notificaciones")
     public void consumirCompraFallida(String mensaje) {
         CompraFallidaEvent evento = leerEvento(mensaje, CompraFallidaEvent.class);
-        log.info("[SIMULADO] Aviso de compra fallida a {} - boleto {} - motivo: {}",
-                evento.emailUsuario(),
-                evento.codigoBoleto(),
-                evento.motivo());
+        exigir(evento.emailUsuario(), "emailUsuario");
+        exigir(evento.motivo(), "motivo");
+        emailService.enviarCompraFallida(evento);
+        log.info("Correo de compra fallida enviado a {} - boleto {} - motivo: {}",
+                evento.emailUsuario(), evento.motivo());
     }
 
     @KafkaListener(topics = KafkaTopics.RESERVA_EXPIRADA, groupId = "ms-notificaciones")
