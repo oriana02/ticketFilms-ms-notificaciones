@@ -2,12 +2,13 @@ package com.ticketfilms.ms_notificaciones.service;
 
 import com.ticketfilms.ms_notificaciones.dto.BoletoCompradoEvent;
 import com.ticketfilms.ms_notificaciones.dto.CompraFallidaEvent;
+import com.ticketfilms.ms_notificaciones.dto.ReservaExpiradaEvent;
+
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailPreparationException;
@@ -19,7 +20,6 @@ import org.springframework.web.util.HtmlUtils;
 // Arma y envía los correos. Si falla, la excepción sube al listener y entra
 // el flujo de reintentos y DLT configurado en KafkaErrorHandlingConfig.
 @Service
-@RequiredArgsConstructor
 public class EmailService {
 
     private static final DateTimeFormatter FORMATO_FECHA
@@ -30,6 +30,11 @@ public class EmailService {
 
     @Value("${app.mail.from}")
     private String remitente;
+
+    public EmailService(JavaMailSender mailSender, QrService qrService) {
+        this.mailSender = mailSender;
+        this.qrService = qrService;
+    }
 
     public void enviarConfirmacion(BoletoCompradoEvent e) {
         byte[] qr = qrService.generarPng(e.codigoBoleto());
@@ -75,6 +80,16 @@ public class EmailService {
                 """.formatted(HtmlUtils.htmlEscape(motivo), referencia);
 
         enviar(e.emailUsuario(), "No pudimos completar tu compra - TicketFilms", html, null);
+    }
+
+    public void enviarReservaExpirada(ReservaExpiradaEvent e) {
+        String html = """
+            <h2>Tu reserva expiró</h2>
+            <p>Los asientos %s de la función %s volvieron a estar disponibles
+            porque pasaron los 5 minutos de reserva.</p>
+            <p>Si aún quieres ir, vuelve a seleccionarlos desde TicketFilms.</p>
+            """.formatted(HtmlUtils.htmlEscape(String.join(", ", e.asientos())), e.funcionId());
+        enviar(e.emailUsuario(), "Tu reserva expiró - TicketFilms", html, null);
     }
 
     private void enviar(String para, String asunto, String html, byte[] qr) {

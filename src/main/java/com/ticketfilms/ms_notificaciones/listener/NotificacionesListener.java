@@ -40,20 +40,29 @@ public class NotificacionesListener {
     @KafkaListener(topics = KafkaTopics.COMPRA_FALLIDA, groupId = "ms-notificaciones")
     public void consumirCompraFallida(String mensaje) {
         CompraFallidaEvent evento = leerEvento(mensaje, CompraFallidaEvent.class);
-        exigir(evento.emailUsuario(), "emailUsuario");
         exigir(evento.motivo(), "motivo");
+        // Este tópico también lo lee ms-asientos para liberar asientos; sin email
+        // no hay a quién avisar, pero eso no es un mensaje inválido.
+        if (evento.emailUsuario() == null || evento.emailUsuario().isBlank()) {
+            log.warn("Compra fallida sin email, se omite el correo - boleto {}", evento.codigoBoleto());
+            return;
+        }
         emailService.enviarCompraFallida(evento);
         log.info("Correo de compra fallida enviado a {} - boleto {} - motivo: {}",
-                evento.emailUsuario(), evento.motivo());
+                evento.emailUsuario(), evento.codigoBoleto(), evento.motivo());
     }
 
     @KafkaListener(topics = KafkaTopics.RESERVA_EXPIRADA, groupId = "ms-notificaciones")
     public void consumirReservaExpirada(String mensaje) {
         ReservaExpiradaEvent evento = leerEvento(mensaje, ReservaExpiradaEvent.class);
-        log.info("[SIMULADO] Aviso de reserva vencida a {} - función {} - asientos {}",
-                evento.emailUsuario(),
-                evento.funcionId(),
-                evento.asientos());
+        exigir(evento.emailUsuario(), "emailUsuario");
+        exigirPresente(evento.funcionId(), "funcionId");
+        if (evento.asientos() == null || evento.asientos().isEmpty()) {
+            throw new MensajeInvalidoException("Falta el campo obligatorio: asientos");
+        }
+        emailService.enviarReservaExpirada(evento);
+        log.info("Correo de reserva expirada enviado a {} - función {}",
+                evento.emailUsuario(), evento.funcionId());
     }
 
     private <T> T leerEvento(String mensaje, Class<T> tipo) {

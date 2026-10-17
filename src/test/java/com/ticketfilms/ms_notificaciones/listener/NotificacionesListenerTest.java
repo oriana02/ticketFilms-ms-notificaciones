@@ -42,12 +42,9 @@ class NotificacionesListenerTest {
     @Test
     void consumirBoletoComprado_mensajeValido_enviaCorreo() throws Exception {
         BoletoCompradoEvent evento = new BoletoCompradoEvent(
-                "TF-AB12-CD34",
-                "a@b.cl",
-                "Dune 3",
+                "TF-AB12-CD34", "a@b.cl", "Dune 3",
                 LocalDateTime.of(2026, 10, 18, 20, 0),
-                new BigDecimal("11000"),
-                List.of("F7", "F8"));
+                new BigDecimal("11000"), List.of("F7", "F8"));
 
         when(objectMapper.readValue(anyString(), eq(BoletoCompradoEvent.class)))
                 .thenReturn(evento);
@@ -69,12 +66,9 @@ class NotificacionesListenerTest {
     @Test
     void consumirBoletoComprado_sinEmail_lanzaMensajeInvalidoException() throws Exception {
         BoletoCompradoEvent incompleto = new BoletoCompradoEvent(
-                "TF-AB12-CD34",
-                null,
-                "Dune 3",
+                "TF-AB12-CD34", null, "Dune 3",
                 LocalDateTime.of(2026, 10, 18, 20, 0),
-                new BigDecimal("11000"),
-                List.of("F7"));
+                new BigDecimal("11000"), List.of("F7"));
 
         when(objectMapper.readValue(anyString(), eq(BoletoCompradoEvent.class)))
                 .thenReturn(incompleto);
@@ -88,16 +82,40 @@ class NotificacionesListenerTest {
     // compra.fallida
     // ============================================================
     @Test
-    void consumirCompraFallida_mensajeValido_procesaSinError() throws Exception {
+    void consumirCompraFallida_mensajeValido_enviaCorreo() throws Exception {
         CompraFallidaEvent evento = new CompraFallidaEvent(
-                "TF-ZZ99-XX11",
-                "a@b.cl",
-                "La reserva expiró");
+                "TF-ZZ99-XX11", "a@b.cl", "La reserva expiró");
 
         when(objectMapper.readValue(anyString(), eq(CompraFallidaEvent.class)))
                 .thenReturn(evento);
 
         assertDoesNotThrow(() -> listener.consumirCompraFallida("{\"x\":\"y\"}"));
+        verify(emailService).enviarCompraFallida(evento);
+    }
+
+    @Test
+    void consumirCompraFallida_sinEmail_omiteCorreoSinError() throws Exception {
+        CompraFallidaEvent sinEmail = new CompraFallidaEvent(
+                "TF-ZZ99-XX11", null, "La reserva expiró");
+
+        when(objectMapper.readValue(anyString(), eq(CompraFallidaEvent.class)))
+                .thenReturn(sinEmail);
+
+        assertDoesNotThrow(() -> listener.consumirCompraFallida("{\"x\":\"y\"}"));
+        verifyNoInteractions(emailService);
+    }
+
+    @Test
+    void consumirCompraFallida_sinMotivo_lanzaMensajeInvalidoException() throws Exception {
+        CompraFallidaEvent sinMotivo = new CompraFallidaEvent(
+                "TF-ZZ99-XX11", "a@b.cl", null);
+
+        when(objectMapper.readValue(anyString(), eq(CompraFallidaEvent.class)))
+                .thenReturn(sinMotivo);
+
+        assertThrows(MensajeInvalidoException.class,
+                () -> listener.consumirCompraFallida("{\"x\":\"y\"}"));
+        verifyNoInteractions(emailService);
     }
 
     @Test
@@ -113,16 +131,41 @@ class NotificacionesListenerTest {
     // reserva.expirada
     // ============================================================
     @Test
-    void consumirReservaExpirada_mensajeValido_procesaSinError() throws Exception {
+    void consumirReservaExpirada_mensajeValido_enviaCorreo() throws Exception {
         ReservaExpiradaEvent evento = new ReservaExpiradaEvent(
-                5L,
-                List.of("F7", "F8"),
-                "a@b.cl");
+                5L, List.of("F7", "F8"), "a@b.cl");
 
         when(objectMapper.readValue(anyString(), eq(ReservaExpiradaEvent.class)))
                 .thenReturn(evento);
 
         assertDoesNotThrow(() -> listener.consumirReservaExpirada("{\"x\":\"y\"}"));
+        verify(emailService).enviarReservaExpirada(evento);
+    }
+
+    @Test
+    void consumirReservaExpirada_sinEmail_lanzaMensajeInvalidoException() throws Exception {
+        ReservaExpiradaEvent sinEmail = new ReservaExpiradaEvent(
+                5L, List.of("F7"), null);
+
+        when(objectMapper.readValue(anyString(), eq(ReservaExpiradaEvent.class)))
+                .thenReturn(sinEmail);
+
+        assertThrows(MensajeInvalidoException.class,
+                () -> listener.consumirReservaExpirada("{\"x\":\"y\"}"));
+        verifyNoInteractions(emailService);
+    }
+
+    @Test
+    void consumirReservaExpirada_sinAsientos_lanzaMensajeInvalidoException() throws Exception {
+        ReservaExpiradaEvent sinAsientos = new ReservaExpiradaEvent(
+                5L, List.of(), "a@b.cl");
+
+        when(objectMapper.readValue(anyString(), eq(ReservaExpiradaEvent.class)))
+                .thenReturn(sinAsientos);
+
+        assertThrows(MensajeInvalidoException.class,
+                () -> listener.consumirReservaExpirada("{\"x\":\"y\"}"));
+        verifyNoInteractions(emailService);
     }
 
     @Test
