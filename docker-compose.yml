@@ -1,0 +1,36 @@
+# Requiere que Kafka ya esté corriendo (lo levanta el compose de ms-boletos)
+# y la red compartida: docker network create ticketfilms-net
+services:
+  # Bandeja de correo de pruebas: ver correos en http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    ports:
+      - "8025:8025"
+
+  ms-notificaciones:
+    build: .
+    container_name: ms-notificaciones
+    restart: unless-stopped
+    depends_on:
+      - mailpit
+    ports:
+      - "8084:8084"
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xmx256m"
+      SERVER_PORT: 8084
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      COGNITO_ISSUER_URI: ${COGNITO_ISSUER_URI}
+      ADMIN_GROUP: ${ADMIN_GROUP:-admin}
+      MAIL_HOST: ${MAIL_HOST:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_STARTTLS: ${MAIL_STARTTLS:-false}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@ticketfilms.local}
+
+networks:
+  default:
+    name: ticketfilms-net
+    external: true
