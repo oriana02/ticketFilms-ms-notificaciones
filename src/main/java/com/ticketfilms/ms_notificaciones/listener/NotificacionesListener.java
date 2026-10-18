@@ -22,7 +22,7 @@ public class NotificacionesListener {
     private final ObjectMapper objectMapper;
     private final EmailService emailService;
 
-    @KafkaListener(topics = KafkaTopics.BOLETO_COMPRADO, groupId = "ms-notificaciones")
+    @KafkaListener(topics = KafkaTopics.BOLETO_COMPRADO)
     public void consumirBoletoComprado(String mensaje) {
         BoletoCompradoEvent evento = leerEvento(mensaje, BoletoCompradoEvent.class);
         exigir(evento.emailUsuario(), "emailUsuario");
@@ -37,7 +37,7 @@ public class NotificacionesListener {
         log.info("Correo de confirmación enviado a {} - boleto {}", evento.emailUsuario(), evento.codigoBoleto());
     }
 
-    @KafkaListener(topics = KafkaTopics.COMPRA_FALLIDA, groupId = "ms-notificaciones")
+    @KafkaListener(topics = KafkaTopics.COMPRA_FALLIDA)
     public void consumirCompraFallida(String mensaje) {
         CompraFallidaEvent evento = leerEvento(mensaje, CompraFallidaEvent.class);
         exigir(evento.motivo(), "motivo");
@@ -52,7 +52,7 @@ public class NotificacionesListener {
                 evento.emailUsuario(), evento.codigoBoleto(), evento.motivo());
     }
 
-    @KafkaListener(topics = KafkaTopics.RESERVA_EXPIRADA, groupId = "ms-notificaciones")
+    @KafkaListener(topics = KafkaTopics.RESERVA_EXPIRADA)
     public void consumirReservaExpirada(String mensaje) {
         ReservaExpiradaEvent evento = leerEvento(mensaje, ReservaExpiradaEvent.class);
         exigir(evento.emailUsuario(), "emailUsuario");
