@@ -1,0 +1,19 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body style="font-family: Arial, sans-serif; color: #333">
+    <h2>No pudimos completar tu compra</h2>
+    <p>Motivo: <strong th:text="${motivo}">Fondos insuficientes</strong></p>
+    <p>
+      Los asientos que reservaste fueron liberados. Puedes volver a intentarlo
+      desde TicketFilms.
+    </p>
+
+    <!-- Bloque condicional: solo se muestra si 'referencia' no es nulo -->
+    <p th:if="${referencia != null}" style="color: #666; font-size: 12px">
+      Referencia: <span th:text="${referencia}"></span>
+    </p>
+  </body>
+</html>

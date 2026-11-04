@@ -3,6 +3,7 @@ package com.ticketfilms.ms_notificaciones.exception;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -18,13 +19,13 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(TopicoNoEncontradoException.class)
-    public ResponseEntity<Map<String, Object>> handleNoEncontrado(TopicoNoEncontradoException ex) {
+    @ExceptionHandler(RecursoNoEncontradoException.class)
+    public ResponseEntity<Map<String, Object>> handleNoEncontrado(RecursoNoEncontradoException ex) {
         return respuesta(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    @ExceptionHandler(TopicoYaExisteException.class)
-    public ResponseEntity<Map<String, Object>> handleYaExiste(TopicoYaExisteException ex) {
+    @ExceptionHandler(RecursoYaExisteException.class)
+    public ResponseEntity<Map<String, Object>> handleYaExiste(RecursoYaExisteException ex) {
         return respuesta(HttpStatus.CONFLICT, ex.getMessage());
     }
 
@@ -46,10 +47,10 @@ public class GlobalExceptionHandler {
         return respuesta(HttpStatus.BAD_REQUEST, "El cuerpo de la solicitud no es un JSON válido");
     }
 
-    // Kafka no respondió o rechazó la operación
+    // RabbitMQ no respondió o rechazó la operación
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<Map<String, Object>> handleKafka(IllegalStateException ex) {
-        log.error("Error en la operación con Kafka: {}", ex.getMessage(), ex);
+    public ResponseEntity<Map<String, Object>> handleRabbit(IllegalStateException ex) {
+        log.error("Error en la operación con RabbitMQ: {}", ex.getMessage(), ex);
         return respuesta(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
     }
 

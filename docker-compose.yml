@@ -1,4 +1,4 @@
-# Requiere que Kafka ya esté corriendo (lo levanta el compose de ms-boletos)
+# Requiere el clúster RabbitMQ corriendo (lo levanta el compose de ms-boletos)
 # y la red compartida: docker network create ticketfilms-net
 services:
   # Bandeja de correo de pruebas: ver correos en http://localhost:8025
@@ -19,7 +19,10 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-Xmx256m"
       SERVER_PORT: 8084
-      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      RABBITMQ_HOST: rabbit1
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      RABBITMQ_MANAGEMENT_URL: http://rabbit1:15672
       COGNITO_ISSUER_URI: ${COGNITO_ISSUER_URI}
       ADMIN_GROUP: ${ADMIN_GROUP:-admin}
       MAIL_HOST: ${MAIL_HOST:-mailpit}

@@ -15,10 +15,9 @@ import org.springframework.mail.MailPreparationException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import org.springframework.web.util.HtmlUtils;
+import org.thymeleaf.TemplateEngine;        
+import org.thymeleaf.context.Context;        
 
-// Arma y envía los correos. Si falla, la excepción sube al listener y entra
-// el flujo de reintentos y DLT configurado en KafkaErrorHandlingConfig.
 @Service
 public class EmailService {
 
@@ -27,13 +26,16 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final QrService qrService;
+    private final TemplateEngine templateEngine; // <-- NUEVA DEPENDENCIA
 
     @Value("${app.mail.from}")
     private String remitente;
 
-    public EmailService(JavaMailSender mailSender, QrService qrService) {
+    // Actualizamos el constructor
+    public EmailService(JavaMailSender mailSender, QrService qrService, TemplateEngine templateEngine) {
         this.mailSender = mailSender;
         this.qrService = qrService;
+        this.templateEngine = templateEngine;
     }
 
     public void enviarConfirmacion(BoletoCompradoEvent e) {
@@ -43,21 +45,16 @@ public class EmailService {
         String total = NumberFormat.getIntegerInstance(Locale.forLanguageTag("es-CL"))
                 .format(e.precioTotal());
 
-        String html = """
-                <h2>¡Compra confirmada!</h2>
-                <p><b>%s</b></p>
-                <p>Función: %s</p>
-                <p>Asientos: %s</p>
-                <p>Total: $%s</p>
-                <p>Código de tu boleto: <b>%s</b></p>
-                <p>Presenta este QR en la entrada:</p>
-                <img src="cid:qr" alt="QR del boleto" width="200" height="200"/>
-                """.formatted(
-                HtmlUtils.htmlEscape(e.tituloEvento()),
-                fecha,
-                HtmlUtils.htmlEscape(String.join(", ", e.asientos())),
-                total,
-                HtmlUtils.htmlEscape(e.codigoBoleto()));
+        // 1. Preparamos el contexto de Thymeleaf
+        Context context = new Context();
+        context.setVariable("tituloEvento", e.tituloEvento());
+        context.setVariable("fecha", fecha);
+        context.setVariable("asientos", String.join(", ", e.asientos()));
+        context.setVariable("total", total);
+        context.setVariable("codigoBoleto", e.codigoBoleto());
+
+        // 2. Procesamos la plantilla HTML
+        String html = templateEngine.process("correo-boleto-comprado", context);
 
         enviar(e.emailUsuario(), "Tu boleto " + e.codigoBoleto() + " - TicketFilms", html, qr);
     }
@@ -67,28 +64,24 @@ public class EmailService {
                 ? "No se pudo completar el pago"
                 : e.motivo();
 
-        String referencia = (e.codigoBoleto() == null || e.codigoBoleto().isBlank())
-                ? ""
-                : "<p style=\"color:#666;font-size:12px\">Referencia: %s</p>"
-                        .formatted(HtmlUtils.htmlEscape(e.codigoBoleto()));
+        String referencia = (e.codigoBoleto() == null || e.codigoBoleto().isBlank()) ? null : e.codigoBoleto();
 
-        String html = """
-                <h2>No pudimos completar tu compra</h2>
-                <p>Motivo: %s</p>
-                <p>Los asientos que reservaste fueron liberados. Puedes volver a intentarlo desde TicketFilms.</p>
-                %s
-                """.formatted(HtmlUtils.htmlEscape(motivo), referencia);
+        Context context = new Context();
+        context.setVariable("motivo", motivo);
+        context.setVariable("referencia", referencia);
+
+        String html = templateEngine.process("correo-compra-fallida", context);
 
         enviar(e.emailUsuario(), "No pudimos completar tu compra - TicketFilms", html, null);
     }
 
     public void enviarReservaExpirada(ReservaExpiradaEvent e) {
-        String html = """
-            <h2>Tu reserva expiró</h2>
-            <p>Los asientos %s de la función %s volvieron a estar disponibles
-            porque pasaron los 5 minutos de reserva.</p>
-            <p>Si aún quieres ir, vuelve a seleccionarlos desde TicketFilms.</p>
-            """.formatted(HtmlUtils.htmlEscape(String.join(", ", e.asientos())), e.funcionId());
+        Context context = new Context();
+        context.setVariable("asientos", String.join(", ", e.asientos()));
+        context.setVariable("funcionId", e.funcionId());
+
+        String html = templateEngine.process("correo-reserva-expirada", context);
+
         enviar(e.emailUsuario(), "Tu reserva expiró - TicketFilms", html, null);
     }
 
@@ -99,9 +92,9 @@ public class EmailService {
             helper.setFrom(remitente);
             helper.setTo(para);
             helper.setSubject(asunto);
-            helper.setText(html, true);                                          // primero el texto
+            helper.setText(html, true);
             if (qr != null) {
-                helper.addInline("qr", new ByteArrayResource(qr), "image/png");  // luego la imagen
+                helper.addInline("qr", new ByteArrayResource(qr), "image/png");
             }
             mailSender.send(mensaje);
         } catch (MessagingException ex) {

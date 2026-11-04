@@ -1,0 +1,194 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>¡Compra confirmada!</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #f0f0f0;
+      font-family: &quot;Segoe UI&quot;, Arial, sans-serif;
+    "
+  >
+    <table
+      width="100%"
+      border="0"
+      cellspacing="0"
+      cellpadding="0"
+      style="background-color: #f0f0f0; padding: 40px 0"
+    >
+      <tr>
+        <td align="center">
+          <!-- Contenedor Principal tipo Ticket -->
+          <table
+            width="500"
+            border="0"
+            cellspacing="0"
+            cellpadding="0"
+            style="
+              background-color: #ffffff;
+              border-radius: 12px;
+              box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+              overflow: hidden;
+            "
+          >
+            <!-- Cabecera del ticket -->
+            <tr>
+              <td align="center" style="padding: 40px 30px 20px 30px">
+                <h2
+                  style="
+                    color: #333333;
+                    margin: 0 0 10px 0;
+                    font-size: 20px;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                  "
+                >
+                  TicketFilms
+                </h2>
+                <p style="color: #777777; font-size: 14px; margin: 0">
+                  ¡Gracias por tu compra!
+                </p>
+              </td>
+            </tr>
+
+            <!-- Información de la película -->
+            <tr>
+              <td align="center" style="padding: 0 40px">
+                <h1
+                  style="
+                    color: #111111;
+                    margin: 10px 0;
+                    font-size: 26px;
+                    font-weight: 800;
+                  "
+                  th:text="${tituloEvento}"
+                >
+                  Título de la Película
+                </h1>
+
+                <table
+                  width="100%"
+                  border="0"
+                  cellspacing="0"
+                  cellpadding="0"
+                  style="margin-top: 15px"
+                >
+                  <tr>
+                    <td align="center" style="color: #555555; font-size: 15px">
+                      <strong>Función:</strong>
+                      <span th:text="${fecha}">05-11-2026 a las 18:30</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      align="center"
+                      style="color: #555555; font-size: 15px; padding-top: 5px"
+                    >
+                      <strong>Asientos:</strong>
+                      <span th:text="${asientos}">E5, E6</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      align="center"
+                      style="color: #555555; font-size: 15px; padding-top: 5px"
+                    >
+                      <strong>Total:</strong> $<span th:text="${total}"
+                        >15000</span
+                      >
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Separador Punteado -->
+            <tr>
+              <td style="padding: 30px 20px 20px 20px">
+                <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td
+                      style="
+                        border-bottom: 2px dashed #e0e0e0;
+                        font-size: 0;
+                        line-height: 0;
+                      "
+                    >
+                      &nbsp;
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Zona del QR -->
+            <tr>
+              <td align="center" style="padding: 0 30px 30px 30px">
+                <p style="color: #666666; font-size: 14px; margin-bottom: 20px">
+                  Presenta este código QR en la entrada:
+                </p>
+
+                <!-- Imagen del QR enmarcada -->
+                <div
+                  style="
+                    background-color: #ffffff;
+                    padding: 15px;
+                    border-radius: 10px;
+                    border: 1px solid #eeeeee;
+                    display: inline-block;
+                  "
+                >
+                  <img
+                    src="cid:qr"
+                    alt="QR del boleto"
+                    width="220"
+                    height="220"
+                    style="display: block"
+                  />
+                </div>
+
+                <p style="color: #999999; font-size: 12px; margin-top: 20px">
+                  Código:
+                  <strong th:text="${codigoBoleto}">TF-AB12-CD34</strong>
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer Ticket -->
+            <tr>
+              <td
+                align="center"
+                style="
+                  padding: 20px;
+                  background-color: #fafafa;
+                  border-top: 1px solid #eeeeee;
+                "
+              >
+                <p style="color: #777777; font-size: 13px; margin: 0">
+                  Disfruta la película 🍿
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Footer Externo -->
+          <table width="500" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td
+                align="center"
+                style="padding: 20px; color: #999999; font-size: 12px"
+              >
+                <p style="margin: 0">
+                  Si tienes problemas, contacta a soporte.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
